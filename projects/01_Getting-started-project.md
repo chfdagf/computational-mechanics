@@ -75,6 +75,7 @@ def LifeApproxT(time):
     Arguments:
     ----------
     Time: time elapsed between initial temperature
+    
     Outputs:
     -------- 
     Temperature: Corpse temperature
@@ -133,7 +134,7 @@ plt.plot(t,v_analytical,label='analytical')
 plt.title('First 2 hours of corpse temperature')
 plt.xlabel('time (hours)')
 plt.ylabel(f'Temperature ({chr(176)}F)')
-plt.ylim(50,100)
+plt.ylim(70,90)
 plt.legend()
 print("From the graph it can be observed that the earlier in time(0.0-0.5) the values overlap which is the earlier time step which means the Euler integration converges to the analytical solution as the time step is decreased.")
 ```
