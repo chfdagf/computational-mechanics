@@ -124,8 +124,7 @@ t=np.linspace(0,2,num=50)#num = time step
 n= len(t)
 v_numerical=[]
 for i in range(len(t)):v_numerical.append(LifeApproxT(t[i]))
-v_analytical=[] 
-for i in range(len(t)):v_analytical.append(LifeAnalytical(t[i]))
+v_analytical=LifeAnalytical(t)
 #for i in reversed(range(0,3)):
 #    print(f"time elapsed: {i}, Temperature of corpse: {LifeAnalytical(i)}{chr(176)}F")#shows as elapsed time(hours) go to 0 it reaches
 plt.figure()
