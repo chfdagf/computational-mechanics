@@ -271,5 +271,5 @@ plt.title('GOOGL changes in price over 4 years\n'+
 ```
 
 ```{code-cell} ipython3
-#2
+
 ```
