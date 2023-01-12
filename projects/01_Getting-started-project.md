@@ -119,23 +119,24 @@ def LifeAnalytical(time, T_Ambient=65, T_0=85, K=0.275):
     '''
     T_t=T_Ambient +(T_0-T_Ambient)*np.exp(-K*time)
     return T_t
-#a
-t=np.linspace(0,2,num=50)#num = time step
-n= len(t)
-v_numerical=[]
-for i in range(len(t)):v_numerical.append(LifeApproxT(t[i]))
+#a  
+for N in [5, 17, 25,41]:
+    t=np.linspace(0,3,N)#num = time step
+    dt = t[1] - t[0]
+    T_euler = np.zeros(len(t))
+    T_euler[0]=T_0
+    for i in range(1,len(t)):
+        T_euler[i] = T_euler[i-1] - K * (T_euler[i-1] - T_a)*dt
+
+    plt.plot(t, T_euler, 's--', label=f'{dt} Euler steps')
 v_analytical=LifeAnalytical(t)
-#for i in reversed(range(0,3)):
-#    print(f"time elapsed: {i}, Temperature of corpse: {LifeAnalytical(i)}{chr(176)}F")#shows as elapsed time(hours) go to 0 it reaches
-plt.figure()
-plt.plot(t,v_numerical,'o',label=str(n)+' Euler steps')
 plt.plot(t,v_analytical,label='analytical')
-plt.title('First 2 hours of corpse temperature')
+plt.title('First 3 hours of corpse temperature')
 plt.xlabel('time (hours)')
 plt.ylabel(f'Temperature ({chr(176)}F)')
-plt.ylim(70,90)
+
 plt.legend()
-print("From the graph it can be observed that the earlier in time(0.0-0.5) the values overlap which is the earlier time step which means the Euler integration converges to the analytical solution as the time step is decreased.")
+print("From the graph it can be observed that the smaller the euler steps the more the values overlap until it is basically identical which means the Euler integration converges to the analytical solution as the time step is decreased.")
 ```
 
 ```{code-cell} ipython3
