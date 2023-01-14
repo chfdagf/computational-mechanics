@@ -5,9 +5,9 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.10.3
+    jupytext_version: 1.11.4
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
@@ -60,6 +60,8 @@ plt.style.use('fivethirtyeight')
 fea_arrays = np.load('./fea_arrays.npz')
 K=fea_arrays['K']
 K
+node=fea_arrays["nodes"]
+elems = fea_arrays["elems"]
 ```
 
 In this project we are solving the problem, $\mathbf{F}=\mathbf{Ku}$, where $\mathbf{F}$ is measured in Newtons, $\mathbf{K}$ `=E*A*K` is the stiffness in N/mm, `E` is Young's modulus measured in MPa (N/mm^2), and `A` is the cross-sectional area of the beam measured in mm^2. 
@@ -88,8 +90,8 @@ c. What error would you expect when you solve for `u[2:13]` in `K[2:13,2:13]*u=F
 print(np.linalg.cond(K))
 print(np.linalg.cond(K[2:13,2:13]))
 
-print('expected error in x=solve(K,b) is {}'.format(10**(16-16)))
-print('expected error in x=solve(K[2:13,2:13],b) is {}'.format(10**(2-16)))
+print('expected error in x=solve(K,b) is {}'.format(10**(17-16))) #error for u
+print('expected error in x=solve(K[2:13,2:13],b) is {}'.format(10**(1-16)))
 ```
 
 ### 2. Apply a 300-N downward force to the central top node (n 4)
@@ -117,7 +119,92 @@ d. Create a plot of the undeformed and deformed structure with the displacements
 ![Deformed structure with loads applied](../images/deformed_truss.png)
 
 ```{code-cell} ipython3
- 
+E_Al=70e3
+E_St=200e3
+A=.1
+def LUNaive(A):
+    '''LUNaive: naive LU decomposition
+    L,U = LUNaive(A): LU decomposition without pivoting.
+    solution method requires floating point numbers, 
+    as such the dtype is changed to float
+    
+    Arguments:
+    ----------
+    A = coefficient matrix
+    returns:
+    ---------
+    L = Lower triangular matrix
+    U = Upper triangular matrix
+    '''
+    [m,n] = np.shape(A)
+    if m!=n: error('Matrix A must be square')
+    nb = n+1
+    # Gauss Elimination
+    U = A.astype(float)
+    L = np.eye(n)
+
+    for k in range(0,n-1):
+        for i in range(k+1,n):
+            if U[k,k] != 0.0:
+                factor = U[i,k]/U[k,k]
+                L[i,k]=factor
+                U[i,:] = U[i,:] - factor*U[k,:]
+    return L,U
+L,U=LUNaive(K)
+print(L*U)
+F=np.zeros(len(K[2:13,2:13]))
+F[5]=-300
+def solveLU(L,U,b):
+    '''solveLU: solve for x when LUx = b
+    x = solveLU(L,U,b): solves for x given the lower and upper 
+    triangular matrix storage
+    uses forward substitution for 
+    1. Ly = b
+    then backward substitution for
+    2. Ux = y
+    
+    Arguments:
+    ----------
+    L = Lower triangular matrix
+    U = Upper triangular matrix
+    b = output vector
+    
+    returns:
+    ---------
+    x = solution of LUx=b '''
+    n=len(b)
+    x=np.zeros(n)
+    y=np.zeros(n)
+        
+    # forward substitution
+    for k in range(0,n):
+        y[k] = b[k] - L[k,0:k]@y[0:k]
+    # backward substitution
+    for k in range(n-1,-1,-1):
+        x[k] = (y[k] - U[k,k+1:n]@x[k+1:n])/U[k,k]
+    return x
+u=solveLU(L,U,F)
+
+
+Ftotal = E_Al*A*K@u
+
+#d
+from __future__ import print_function
+from ipywidgets import interact, interactive, fixed, interact_manual
+import ipywidgets as widgets
+r=np.block([n[1:3] for n in nodes])
+def f(s):
+    plt.plot(r[ix],r[iy],'-',color=(0,0,0,1))
+    plt.plot(r[ix]+u[ix]*s,r[iy]+u[iy]*s,'-',color=(1,0,0,1))
+    #plt.quiver(r[ix],r[iy],u[ix],u[iy],color=(0,0,1,1),label='displacements')
+    plt.quiver(r[ix],r[iy],F[ix],F[iy],color=(1,0,0,1),label='applied forces')
+    plt.quiver(r[ix],r[iy],u[ix],u[iy],color=(0,0,1,1),label='displacements')
+    plt.axis(l*np.array([-0.5,3.5,-0.5,2]))
+    plt.xlabel('x (mm)')
+    plt.ylabel('y (mm)')
+    plt.title('Deformation scale = {:.1f}x'.format(s))
+    plt.legend(bbox_to_anchor=(1,0.5))
+interact(f,s=(0,10,1));
 ```
 
 ### 3. Determine cross-sectional area
@@ -130,7 +217,8 @@ c. What are the weights of the aluminum and steel trusses with the
 chosen cross-sectional areas?
 
 ```{code-cell} ipython3
-
+A=.1
+l=.2
 ```
 
 ## References

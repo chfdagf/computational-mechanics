@@ -255,10 +255,13 @@ Here are the list of stocks in this dataset:
 
 #1
 NVDA_data = data[data['symbol'] == 'NVDA']
-plt.plot(NVDA_data['date'], NVDA_data['open'])
+NVDA_data_pre_2017 = NVDA_data[ NVDA_data['date'] < pd.to_datetime('2016-01-01')]
+NVDA_data_post_2017 = NVDA_data
+print(NVDA_data_post_2017)
+plt.plot(NVDA_data_pre_2017['date'], NVDA_data_pre_2017['open'])
 plt.xlabel('date (year)')
 plt.ylabel('price (\$)');
-dprice = np.diff(NVDA_data['open'])
+dprice = np.diff(NVDA_data_pre_2017['open'])
 mean_dprice = np.mean(dprice)
 std_dprice = np.std(dprice)
 x = np.linspace(-40, 40)
@@ -266,8 +269,52 @@ price_pdf = stats.norm.pdf(x, loc = mean_dprice, scale = std_dprice)
 plt.figure()
 plt.hist(dprice, 50, density=True)
 plt.plot(x, price_pdf)
-plt.title('GOOGL changes in price over 4 years\n'+
+plt.title('NVDA changes in price over 6 years\n'+
          'avg: \${:.2f} stdev: \${:.2f}'.format(mean_dprice, std_dprice));
+```
+
+```{code-cell} ipython3
+rng = default_rng()
+N_models = 100
+dprice_model = rng.normal(size = (len(NVDA_data_pre_2017), N_models), loc = mean_dprice, scale = std_dprice)
+price_model = np.cumsum(dprice_model, axis = 0) + NVDA_data_pre_2017['open'].values[0]
+print(len(NVDA_data_pre_2017['date']),len(price_model))
+plt.plot(NVDA_data_pre_2017['date'], price_model, alpha = 0.3)
+plt.plot(NVDA_data['date'], NVDA_data['open'], c = 'k', label = 'NVDA data')
+price_model_avg = np.mean(price_model, axis = 1)
+price_model_std = np.std(price_model, axis = 1)
+skip = 100
+plt.errorbar(NVDA_data_pre_2017['date'][::skip], price_model_avg[::skip],
+             yerr = price_model_std[::skip], 
+             fmt = 'o',
+             c = 'r', 
+             label = 'model result', 
+            zorder = 3);
+plt.xlabel("date")
+plt.ylabel("opening price ($)")
+plt.legend();
+#can't accurately predict 2017 spike only using 2010-2016 data
+plt.figure()
+NVDA_data_pre_2017 =NVDA_data
+rng = default_rng()
+N_models = 100
+dprice_model = rng.normal(size = (len(NVDA_data_pre_2017), N_models), loc = mean_dprice, scale = std_dprice)
+price_model = np.cumsum(dprice_model, axis = 0) + NVDA_data_pre_2017['open'].values[0]
+print(len(NVDA_data_pre_2017['date']),len(price_model))
+plt.plot(NVDA_data_pre_2017['date'], price_model, alpha = 0.3)
+plt.plot(NVDA_data['date'], NVDA_data['open'], c = 'k', label = 'NVDA data')
+price_model_avg = np.mean(price_model, axis = 1)
+price_model_std = np.std(price_model, axis = 1)
+skip = 100
+plt.errorbar(NVDA_data_pre_2017['date'][::skip], price_model_avg[::skip],
+             yerr = price_model_std[::skip], 
+             fmt = 'o',
+             c = 'r', 
+             label = 'model result', 
+            zorder = 3);
+plt.xlabel("date")
+plt.ylabel("opening price ($)")
+plt.legend();
 ```
 
 ```{code-cell} ipython3

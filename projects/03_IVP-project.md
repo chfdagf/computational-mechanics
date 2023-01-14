@@ -74,7 +74,7 @@ $\frac{d~state}{dt} = f(state)$
 
 $\left[\begin{array}{c} v\\a\\ \frac{dm}{dt} \end{array}\right] = \left[\begin{array}{c} v\\ \frac{u}{m}\frac{dm}{dt} \\ \frac{dm}{dt} \end{array}\right]$
 
-Use [an integration method](../module_03/03_Get_Oscillations) to
+Use [an integration method](../module_03/03_Get_Oscillations.md) to
 integrate the `simplerocket` function. Demonstrate that your solution
 converges to equation (2.b) the Tsiolkovsky equation. Use an initial
 state of y=0 m, v=0 m/s, and m=0.25 kg. 
@@ -96,6 +96,7 @@ Integrate the function until mass, $m_{f}=0.05~kg$, using a mass rate change of 
 import numpy as np
 import matplotlib.pyplot as plt
 plt.style.use('fivethirtyeight')
+from scipy.integrate import solve_ivp
 ```
 
 ```{code-cell} ipython3
@@ -115,16 +116,45 @@ def simplerocket(state,dmdt=0.05, u=250):
     '''
     
     dstate = np.zeros(np.shape(state))
-    dstate = 
+    dstate[0] = state[1] 
+    dstate[1] = (u*dmdt/state[2])
+    dstate[2] = -dmdt
     return dstate
+def rk2_step(state, rhs, dt):
+    '''Update a state to the next time increment using modified Euler's method.
+    
+    Arguments
+    ---------
+    state : array of dependent variables
+    rhs   : function that computes the RHS of the DiffEq
+    dt    : float, time increment
+    
+    Returns
+    -------
+    next_state : array, updated after one time increment'''
+    
+    mid_state = state + rhs(state) * dt*0.5    
+    next_state = state + rhs(mid_state)*dt
+ 
+    return next_state
 ```
 
 ```{code-cell} ipython3
 m0=0.25
 mf=0.05
-dm=0.05
+dm=0.05 
 t = np.linspace(0,(m0-mf)/dm,500)
 dt=t[1]-t[0]
+#solve_ivp?
+numer = solve_ivp(lambda t, y:simplerocket(y, dmdt=dm),[t[0], t[-1]],[0,0,m0], method = 'RK45',t_eval=t)
+u=250
+m = np.linspace(mf,m0)
+v = -u*np.log(m/m0)
+plt.plot(numer.y[2],numer.y[1], 's--', label ='RK45')
+plt.plot(m,v,label = "tk")
+plt.xlabel('mass (kg)')
+plt.ylabel('speed (m/s)')
+plt.legend()
 ```
 
 __2.__ You should have a converged solution for integrating `simplerocket`. Now, create a more relastic function, `rocket` that incorporates gravity and drag and returns the velocity, $v$, the acceleration, $a$, and the mass rate change $\frac{dm}{dt}$, as a function of the $state = [position,~velocity,~mass] = [y,~v,~m]$ using eqn (1). Where the mass rate change $\frac{dm}{dt}$ and the propellent speed $u$ are constants. The average velocity of gun powder propellent used in firework rockets is $u=250$ m/s [3,4]. 
@@ -157,8 +187,26 @@ def rocket(state,dmdt=0.05, u=250,c=0.18e-3):
     '''
     g=9.81
     dstate = np.zeros(np.shape(state))
-    # your work
+    dstate[0] = state[1]
+    dstate[1] = (u/state[2])*dmdt-g-(c/state[2])*state[1]**2
+    dstate[2] = -dmdt
     return dstate
+dm=1#changed to show convergence
+t = np.linspace(0,(m0-mf)/dm,100)
+dt=t[1]-t[0]
+#solve_ivp?
+numerR45 = solve_ivp(lambda t, y:rocket(y, dmdt=dm),[t[0], t[-1]],[0,0,m0], method = 'RK45',t_eval=t)
+numerRadau = solve_ivp(lambda t, y:rocket(y, dmdt=dm),[t[0], t[-1]],[0,0,m0], method = 'Radau',t_eval=t)
+u=250
+m = np.linspace(mf,m0)
+v = -u*np.log(m/m0)
+plt.figure(figsize=(8,5))
+plt.plot(numerRadau.y[2],numerRadau.y[1], 's', label ='Radau')
+plt.plot(numerR45.y[2],numerR45.y[1], 's',label ='RK45')
+plt.plot(m,v,label = "tk")
+plt.xlabel('mass (kg)')
+plt.ylabel('speed (m/s)')
+plt.legend();
 ```
 
 __3.__ Solve for the mass change rate that results in detonation at a height of 300 meters. Create a function `f_dm` that returns the final height of the firework when it reaches $m_{f}=0.05~kg$. The inputs should be 
@@ -182,6 +230,9 @@ b. Use the modified secant method to find the root of the function $f_{m}$.
 c. Plot your solution for the height as a function of time and indicate the detonation with a `*`-marker.
 
 ```{code-cell} ipython3
+plt.plot(numerR45.t, numerR45.y[0])
+plt.plot(numerR45.t[-1],numerR45.y[0,-1],"*",markersize=30)
+#print(numerR45.y[0,1])
 def f_dm(dmdt, m0 = 0.25, c = 0.18e-3, u = 250):
     ''' define a function f_dm(dmdt) that returns 
     height_desired-height_predicted[-1]
@@ -199,8 +250,14 @@ def f_dm(dmdt, m0 = 0.25, c = 0.18e-3, u = 250):
     error: the difference between height_desired and height_predicted[-1]
         when f_dm(dmdt) = 0, the correct mass change rate was chosen
     '''
-    # your work
+    mf = .05
+    t = np.linspace(0,(m0-mf)/dmdt,50)
+    dt=t[1]-t[0]
+    sol = solve_ivp(lambda t, y:rocket(y, dmdt=dmdt, u=u,c=c),[t[0], t[-1]],[0,0,m0], method = 'RK45',t_eval=t)
+    error=sol.y[0, -1] - 300
     return error
+
+f_dm(.05)
 ```
 
 ```{code-cell} ipython3

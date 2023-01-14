@@ -5,9 +5,9 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.10.3
+    jupytext_version: 1.11.4
 kernelspec:
-  display_name: Python 3
+  display_name: Python 3 (ipykernel)
   language: python
   name: python3
 ---
@@ -365,10 +365,11 @@ $\mathbf{Temp} = [t~~t^0~~(t-1970)\cdot H(t-1970)][A,~B,~C]^T$
 fname = '../data/land_global_temperature_anomaly-1880-2016.csv'
 
 temp_data = pd.read_csv(fname,skiprows=4)
-
+#print(temp_data)
 t = temp_data['Year'].values
 T = temp_data['Value'].values
 
+print([t])
 Z= np.block([[t],[t**0],[(t-1970)*(t>=1970)]]).T
 
 print('This is every 10th row of Z')
